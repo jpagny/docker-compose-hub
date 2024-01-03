@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  ghost:
+    image: ghost:5.75.2
+    depends_on:
+      - db
+    environment:
+      database__client: mysql
+      database__connection__host: db
+      database__connection__user: ${MYSQL_USER}
+      database__connection__password: ${MYSQL_PASSWORD}
+      database__connection__database: ${MYSQL_DATABASE}
+      NODE_ENV: production
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ghost.rule=Host(`monjournalgeek.jpagny.fr`)
+      - traefik.http.routers.ghost.entrypoints=websecure
+      - traefik.http.routers.ghost.tls.certresolver=myresolver
+    volumes:
+      - ./share/themes:/var/lib/ghost/content/themes/
+    networks:
+      - web
+
+  db:
+    image: mysql:8.2.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    volumes:
+      - ghost-db:/var/lib/mysql
+    networks:
+      - web
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ghost-db:
+
+networks:
+  web:
+    external: true

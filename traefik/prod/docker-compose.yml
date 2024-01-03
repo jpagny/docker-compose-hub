@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+  traefik:
+    image: traefik:v2.10.7
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`your-host-name`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls.certresolver=myresolver"
+      - "traefik.http.routers.api.service=api@internal"
+      - "traefik.http.routers.api.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.usersfile=/config/htpasswd"
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=ypur-address-mail"
+      - "--certificatesresolvers.myresolver.acme.storage=/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./share/acme.json:/acme.json
+      - ./share/htpasswd:/config/htpasswd
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
